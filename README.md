@@ -93,7 +93,48 @@ leave-management-system/
 
 ```bash
 git clone <your-repo-url>
-cd leave-management-system
+# Leave Management System
+
+A full-stack leave management application with a React frontend and Node.js backend.
+
+## Run locally
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+## Deploy to GitHub Pages
+
+1. Create a GitHub repository.
+2. Push this project to GitHub.
+3. Install the GitHub Pages deploy tool:
+
+```bash
+cd frontend
+npm install --save-dev gh-pages
+```
+
+4. Deploy the frontend:
+
+```bash
+npm run deploy
+```
+
+The site will be available at:
+
+https://<your-username>.github.io/leave-management-system/
 
 # Backend
 cd backend
