@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: Leave Management System API
+  description: REST API for the Employee Leave Management System MVP.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Local development server
+
+tags:
+  - name: Auth
+  - name: Employees
+  - name: Leaves
+  - name: Manager
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Employee:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: "Tarun" }
+        email: { type: string, example: "employee@company.com" }
+        department: { type: string, example: "Engineering" }
+        role: { type: string, enum: [EMPLOYEE, MANAGER] }
+        manager_id: { type: integer, nullable: true }
+        leave_balance: { type: integer, example: 20 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Leave:
+      type: object
+      properties:
+        id: { type: integer }
+        employee_id: { type: integer }
+        leave_type: { type: string, enum: [SICK, CASUAL, EARNED, UNPAID] }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        total_days: { type: integer }
+        reason: { type: string }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED, CANCELLED] }
+        manager_comments: { type: string, nullable: true }
+        reviewed_by: { type: integer, nullable: true }
+        reviewed_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: "employee@company.com" }
+                password: { type: string, example: "Password@123" }
+      responses:
+        '200':
+          description: Login successful, returns access and refresh tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: '#/components/schemas/Employee' }
+                      accessToken: { type: string }
+                      refreshToken: { type: string }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout the current user
+      responses:
+        '200': { description: Logged out successfully }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Exchange a refresh token for a new access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200': { description: New access token issued }
+        '401': { description: Invalid or expired refresh token }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the currently authenticated user's profile
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data: { $ref: '#/components/schemas/Employee' }
+
+  /employees:
+    get:
+      tags: [Employees]
+      summary: List all employees (Manager only)
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: department
+          schema: { type: string }
+        - in: query
+          name: role
+          schema: { type: string, enum: [EMPLOYEE, MANAGER] }
+      responses:
+        '200': { description: List of employees }
+        '403': { description: Forbidden - manager role required }
+    post:
+      tags: [Employees]
+      summary: Create a new employee (Manager only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                department: { type: string }
+                role: { type: string, enum: [EMPLOYEE, MANAGER] }
+                manager_id: { type: integer }
+      responses:
+        '201': { description: Employee created }
+        '409': { description: Email already exists }
+
+  /employees/{id}:
+    get:
+      tags: [Employees]
+      summary: Get an employee's profile by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Employee profile }
+        '403': { description: Employees may only view their own profile }
+        '404': { description: Employee not found }
+
+  /leaves:
+    post:
+      tags: [Leaves]
+      summary: Apply for a new leave request (Employee)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [leave_type, start_date, end_date, reason]
+              properties:
+                leave_type: { type: string, enum: [SICK, CASUAL, EARNED, UNPAID] }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                reason: { type: string }
+      responses:
+        '201': { description: Leave request created }
+        '422': { description: Validation error }
+    get:
+      tags: [Leaves]
+      summary: List leave requests (own for employees, team's for managers)
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [PENDING, APPROVED, REJECTED, CANCELLED] }
+        - in: query
+          name: leave_type
+          schema: { type: string, enum: [SICK, CASUAL, EARNED, UNPAID] }
+        - in: query
+          name: search
+          schema: { type: string }
+      responses:
+        '200': { description: List of leave requests }
+
+  /leaves/dashboard-stats:
+    get:
+      tags: [Leaves]
+      summary: Get dashboard statistics for the current user (role-aware)
+      responses:
+        '200': { description: Dashboard statistics }
+
+  /leaves/{id}:
+    get:
+      tags: [Leaves]
+      summary: Get a single leave request by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Leave request detail }
+        '404': { description: Not found }
+    put:
+      tags: [Leaves]
+      summary: Edit a pending leave request (Employee, owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leave_type: { type: string }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                reason: { type: string }
+      responses:
+        '200': { description: Leave request updated }
+        '400': { description: Only pending requests can be edited }
+    delete:
+      tags: [Leaves]
+      summary: Cancel a pending leave request (Employee, owner only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { description: Leave request cancelled }
+        '400': { description: Only pending requests can be cancelled }
+
+  /pending-leaves:
+    get:
+      tags: [Manager]
+      summary: List pending leave requests for the manager's team
+      parameters:
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: leave_type
+          schema: { type: string }
+      responses:
+        '200': { description: List of pending leave requests }
+
+  /leaves/{id}/approve:
+    put:
+      tags: [Manager]
+      summary: Approve a pending leave request
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comments: { type: string }
+      responses:
+        '200': { description: Leave request approved }
+        '400': { description: Only pending requests can be approved }
+
+  /leaves/{id}/reject:
+    put:
+      tags: [Manager]
+      summary: Reject a pending leave request (comments required)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comments]
+              properties:
+                comments: { type: string }
+      responses:
+        '200': { description: Leave request rejected }
+        '422': { description: Comments are required }
