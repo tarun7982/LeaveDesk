@@ -10,8 +10,27 @@ const managerRoutes = require('./routes/managerRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*', credentials: true }));
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://tarun7982.github.io',
+  'https://tarun7982.github.io/LeaveDesk',
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || !isProduction || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 

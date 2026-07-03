@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const fallbackApiUrl = (() => {
+  const host = window.location.hostname;
+
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  }
+
+  if (host.includes('github.io')) {
+    return 'https://leavedesk-api.onrender.com/api';
+  }
+
+  return `http://${host}:5000/api`;
+})();
+
+const BASE_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
 
 const api = axios.create({ baseURL: BASE_URL });
 
@@ -50,7 +64,7 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.hash = '#/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
