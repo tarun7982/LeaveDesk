@@ -15,6 +15,8 @@ function normalizeApiBaseUrl(rawUrl) {
   return `${withoutTrailingSlash}/api`;
 }
 
+const DEFAULT_API_URL = 'https://leavedesk-api.onrender.com/api';
+
 const fallbackApiUrl = (() => {
   const host = window.location.hostname;
 
@@ -23,11 +25,11 @@ const fallbackApiUrl = (() => {
   }
 
   if (host.includes('github.io')) {
-    return 'https://leavedesk-api.onrender.com/api';
+    return DEFAULT_API_URL;
   }
 
   // For deployed production builds, use the Render backend by default.
-  return 'https://leavedesk-api.onrender.com/api';
+  return DEFAULT_API_URL;
 })();
 
 const BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || fallbackApiUrl);
