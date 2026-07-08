@@ -134,7 +134,21 @@ npm run deploy
 
 The site will be available at:
 
-https://<your-username>.github.io/leave-management-system/
+https://<your-username>.github.io/LeaveDesk/
+
+## Deploy the backend to Render
+
+1. Create a Render account and connect this GitHub repository.
+2. Create a new Web Service using the backend folder.
+3. Use these settings:
+   - Build Command: npm install
+   - Start Command: npm start
+4. Add these environment variables:
+   - NODE_ENV=production
+   - CLIENT_ORIGIN=https://<your-username>.github.io
+5. After deployment, the API will be available at:
+
+https://leavedesk-api.onrender.com/api/health
 
 # Backend
 cd backend

@@ -1,5 +1,20 @@
 import axios from 'axios';
 
+function normalizeApiBaseUrl(rawUrl) {
+  if (!rawUrl) return rawUrl;
+
+  const trimmedUrl = rawUrl.trim();
+  if (!trimmedUrl) return trimmedUrl;
+
+  const withoutTrailingSlash = trimmedUrl.replace(/\/$/, '');
+
+  if (withoutTrailingSlash.endsWith('/api')) {
+    return withoutTrailingSlash;
+  }
+
+  return `${withoutTrailingSlash}/api`;
+}
+
 const fallbackApiUrl = (() => {
   const host = window.location.hostname;
 
@@ -14,9 +29,9 @@ const fallbackApiUrl = (() => {
   return `http://${host}:5000/api`;
 })();
 
-const BASE_URL = import.meta.env.VITE_API_URL || fallbackApiUrl;
+const BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || fallbackApiUrl);
 
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({ baseURL: BASE_URL, timeout: 10000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
