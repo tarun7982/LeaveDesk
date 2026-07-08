@@ -26,7 +26,8 @@ const fallbackApiUrl = (() => {
     return 'https://leavedesk-api.onrender.com/api';
   }
 
-  return `http://${host}:5000/api`;
+  // For deployed production builds, use the Render backend by default.
+  return 'https://leavedesk-api.onrender.com/api';
 })();
 
 const BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || fallbackApiUrl);

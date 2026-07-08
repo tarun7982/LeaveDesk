@@ -42,6 +42,10 @@ describe('API base URL selection', () => {
     expect(getApiBaseUrl('localhost')).toBe('http://localhost:5000/api');
   });
 
+  it('uses the Render backend for non-localhost deployments by default', () => {
+    expect(getApiBaseUrl('example.com')).toBe('https://leavedesk-api.onrender.com/api');
+  });
+
   it('adds /api when the configured URL omits it', () => {
     expect(normalizeApiBaseUrl('https://leavedesk-api.onrender.com')).toBe('https://leavedesk-api.onrender.com/api');
   });
